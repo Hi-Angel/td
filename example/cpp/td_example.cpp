@@ -21,6 +21,8 @@
 // Real world programs should use separate thread for the user input.
 // Example includes user authentication, receiving updates, getting chat list and sending text messages.
 
+using namespace std;
+
 // overloaded
 namespace detail {
 template <class... Fs>
@@ -124,6 +126,15 @@ class TdExample {
               std::cout << "[chat_id:" << chat_id << "] [title:" << chat_title_[chat_id] << "]" << std::endl;
             }
           });
+        } else if (action == "t") {
+          std::cout << "Testing..." << std::endl;
+          send_query(td_api::make_object<td_api::getUser>(815051842), [this](Object object) {
+            if (object->get_id() == td_api::error::ID) {
+              return;
+            }
+            auto user = td::move_tl_object_as<td_api::user>(object);
+            cout << "User info" << to_string(user) << endl;
+          });
         }
       }
     }
@@ -164,6 +175,18 @@ class TdExample {
       return;
     }
     //std::cout << response.request_id << " " << to_string(response.object) << std::endl;
+    if (response.object->get_id() == td_api::updateUserStatus::ID) {
+        auto updOption = td::move_tl_object_as<td_api::updateUserStatus>(response.object);
+        if (updOption->user_id_ == 5656816786) {
+            cout << "T" << endl;
+        }
+        if (updOption->user_id_ == 815051842) {
+            cout << "it's Alina malina!" << endl;
+        }
+        auto& val = updOption->status_;
+        cout << "here, val is " << to_string(val) << endl;
+        return;
+    }
     if (response.request_id == 0) {
       return process_update(std::move(response.object));
     }
@@ -197,34 +220,34 @@ class TdExample {
                        authorization_state_ = std::move(update_authorization_state.authorization_state_);
                        on_authorization_state_update();
                      },
-                     [this](td_api::updateNewChat &update_new_chat) {
-                       chat_title_[update_new_chat.chat_->id_] = update_new_chat.chat_->title_;
-                     },
-                     [this](td_api::updateChatTitle &update_chat_title) {
-                       chat_title_[update_chat_title.chat_id_] = update_chat_title.title_;
-                     },
+                     // [this](td_api::updateNewChat &update_new_chat) {
+                     //   chat_title_[update_new_chat.chat_->id_] = update_new_chat.chat_->title_;
+                     // },
+                     // [this](td_api::updateChatTitle &update_chat_title) {
+                     //   chat_title_[update_chat_title.chat_id_] = update_chat_title.title_;
+                     // },
                      [this](td_api::updateUser &update_user) {
                        auto user_id = update_user.user_->id_;
                        users_[user_id] = std::move(update_user.user_);
                      },
-                     [this](td_api::updateNewMessage &update_new_message) {
-                       auto chat_id = update_new_message.message_->chat_id_;
-                       std::string sender_name;
-                       td_api::downcast_call(*update_new_message.message_->sender_id_,
-                                             overloaded(
-                                                 [this, &sender_name](td_api::messageSenderUser &user) {
-                                                   sender_name = get_user_name(user.user_id_);
-                                                 },
-                                                 [this, &sender_name](td_api::messageSenderChat &chat) {
-                                                   sender_name = get_chat_title(chat.chat_id_);
-                                                 }));
-                       std::string text;
-                       if (update_new_message.message_->content_->get_id() == td_api::messageText::ID) {
-                         text = static_cast<td_api::messageText &>(*update_new_message.message_->content_).text_->text_;
-                       }
-                       std::cout << "Got message: [chat_id:" << chat_id << "] [from:" << sender_name << "] [" << text
-                                 << "]" << std::endl;
-                     },
+                     // [this](td_api::updateNewMessage &update_new_message) {
+                     //   auto chat_id = update_new_message.message_->chat_id_;
+                     //   std::string sender_name;
+                     //   td_api::downcast_call(*update_new_message.message_->sender_id_,
+                     //                         overloaded(
+                     //                             [this, &sender_name](td_api::messageSenderUser &user) {
+                     //                               sender_name = get_user_name(user.user_id_);
+                     //                             },
+                     //                             [this, &sender_name](td_api::messageSenderChat &chat) {
+                     //                               sender_name = get_chat_title(chat.chat_id_);
+                     //                             }));
+                     //   std::string text;
+                     //   if (update_new_message.message_->content_->get_id() == td_api::messageText::ID) {
+                     //     text = static_cast<td_api::messageText &>(*update_new_message.message_->content_).text_->text_;
+                     //   }
+                     //   std::cout << "Got message: [chat_id:" << chat_id << "] [from:" << sender_name << "] [" << text
+                     //             << "]" << std::endl;
+                     // },
                      [](auto &update) {}));
   }
 
